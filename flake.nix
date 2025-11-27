@@ -45,8 +45,12 @@
           naersk'.buildPackage {
             src = ./.;
             buildInputs = buildInputs;
-            nativeBuildInputs = [ pkgs.makeWrapper ];
+            nativeBuildInputs =
+              [ pkgs.makeWrapper ]
+              ++ pkgs.lib.optionals pkgs.stdenv.isLinux [ pkgs.mold ];
             inherit release;
+
+            CARGO_BUILD_RUSTFLAGS = pkgs.lib.optionalString pkgs.stdenv.isLinux "-C linker=clang -C link-arg=--ld-path=${pkgs.mold}/bin/mold";
 
             postInstall = ''
               path="${pkgs.lib.makeLibraryPath buildInputs}"
@@ -115,7 +119,7 @@
             cargo
             clippy
             rustfmt
-          ];
+          ] ++ pkgs.lib.optionals pkgs.stdenv.isLinux [ mold ];
 
           buildInputs = buildInputs;
           LD_LIBRARY_PATH = pkgs.lib.makeLibraryPath buildInputs;
