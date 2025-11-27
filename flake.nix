@@ -1,51 +1,25 @@
 {
-  description = "nocap.rs";
-
   inputs = {
-    nixpkgs = {
-      url = "github:nixos/nixpkgs/release-25.05";
-    };
-
-    crane = {
-      url = "github:ipetkov/crane";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-
-    fenix = {
-      url = "github:nix-community/fenix";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-
     flake-utils.url = "github:numtide/flake-utils";
+    naersk.url = "github:nix-community/naersk";
+    nixpkgs.url = "github:nixos/nixpkgs/nixpkgs-unstable";
   };
 
   outputs =
-    inputs@{
+    {
       self,
-      nixpkgs,
-      crane,
-      fenix,
       flake-utils,
+      naersk,
+      nixpkgs,
     }:
     flake-utils.lib.eachDefaultSystem (
       system:
       let
-        pkgs = import nixpkgs {
+        pkgs = (import nixpkgs) {
           inherit system;
-          overlays = [ fenix.overlays.default ];
         };
 
-        inherit (pkgs) lib;
-
-        toolchain = pkgs.fenix.fromToolchainFile {
-          file = ./rust-toolchain;
-          sha256 = "sha256-SDu4snEWjuZU475PERvu+iO50Mi39KVjqCeJeNvpguU=";
-        };
-
-        craneLib = (crane.mkLib pkgs).overrideToolchain toolchain;
-        src = ./.;
-
-        commonArgs = { inherit src; };
+        naersk' = pkgs.callPackage naersk { };
 
         buildInputs = with pkgs; [
           wayland
@@ -64,56 +38,67 @@
           # xorg.libXi
           # xorg.libXrandr
         ];
-
-        cargoArtifacts = craneLib.buildDepsOnly commonArgs;
-
-        nocap-rs = pkgs.callPackage ./nix/nocap-rs.nix {
-          inherit
-            craneLib
-            lib
-            src
-            buildInputs
-            pkgs
-            ;
-        };
       in
       {
         packages = {
-          inherit nocap-rs;
-          nocap-rs-all = nocap-rs.override { withCleanup = true; };
-          default = nocap-rs;
-          image = pkgs.dockerTools.buildImage {
-            name = "nocap_rs";
-            config = {
-              Cmd = [ "${nocap-rs}/bin/nocap-rs" ];
-            };
+          # nix build
+          default = naersk'.buildPackage {
+            src = ./.;
+            buildInputs = buildInputs;
+            nativeBuildInputs = [ pkgs.makeWrapper ];
+            release = false;
+            postInstall = ''
+              wrapProgram $out/bin/nocap_rs \
+                --set LD_LIBRARY_PATH "${pkgs.lib.makeLibraryPath buildInputs}"
+            '';
           };
 
-          # not using flake checks to run them individually
-          checks = {
-            clippy = craneLib.cargoClippy (
-              commonArgs
-              // {
-                inherit cargoArtifacts;
-              }
-            );
+          # nix build .#check
+          check = naersk'.buildPackage {
+            src = ./.;
+            mode = "check";
+          };
 
-            fmt = craneLib.cargoFmt {
-              inherit src;
-            };
+          # nix build .#test
+          test = naersk'.buildPackage {
+            src = ./.;
+            mode = "test";
+          };
+
+          # nix build .#clippy
+          clippy = naersk'.buildPackage {
+            src = ./.;
+            mode = "clippy";
+          };
+
+          # nix build .#fmt
+          fmt = naersk'.buildPackage {
+            src = ./.;
+            mode = "fmt";
+          };
+
+        };
+
+        # nix run
+        apps = {
+          default = {
+            type = "app";
+            program = "${self.packages.${system}.default}/bin/nocap_rs";
           };
         };
 
-        devShells.default = pkgs.mkShell {
-          buildInputs = buildInputs;
-          nativeBuildInputs = [
-            toolchain
+        # For `nix develop`:
+        devShell = pkgs.mkShell {
+          nativeBuildInputs = with pkgs; [
+            rustc
+            cargo
+            clippy
+            rustfmt
           ];
 
-          LD_LIBRARY_PATH = builtins.foldl' (a: b: "${a}:${b}/lib") "${pkgs.vulkan-loader}/lib" buildInputs;
+          buildInputs = buildInputs;
+          LD_LIBRARY_PATH = pkgs.lib.makeLibraryPath buildInputs;
         };
-
-        formatter = pkgs.nixfmt-tree;
       }
     );
 }
