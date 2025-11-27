@@ -67,24 +67,29 @@
           # nix build .#check
           check = naersk'.buildPackage {
             src = ./.;
+            release = false;
             mode = "check";
           };
 
           # nix build .#test
           test = naersk'.buildPackage {
             src = ./.;
+            release = false;
             mode = "test";
           };
 
           # nix build .#clippy
           clippy = naersk'.buildPackage {
             src = ./.;
+            release = false;
             mode = "clippy";
           };
 
           # nix build .#fmt
           fmt = naersk'.buildPackage {
             src = ./.;
+            release = false;
+            nativeBuildInputs = [ pkgs.rustfmt ];
             mode = "fmt";
           };
 
