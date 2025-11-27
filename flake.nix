@@ -38,20 +38,31 @@
           # xorg.libXi
           # xorg.libXrandr
         ];
+
+        binaryName = "nocap_rs";
+        nocap_rs =
+          { release }:
+          naersk'.buildPackage {
+            src = ./.;
+            buildInputs = buildInputs;
+            nativeBuildInputs = [ pkgs.makeWrapper ];
+            inherit release;
+
+            postInstall = ''
+              path="${pkgs.lib.makeLibraryPath buildInputs}"
+              wrapProgram "$out/bin/${binaryName}" \
+                --set LD_LIBRARY_PATH "$path"
+            '';
+          };
+
       in
       {
         packages = {
           # nix build
-          default = naersk'.buildPackage {
-            src = ./.;
-            buildInputs = buildInputs;
-            nativeBuildInputs = [ pkgs.makeWrapper ];
-            release = false;
-            postInstall = ''
-              wrapProgram $out/bin/nocap_rs \
-                --set LD_LIBRARY_PATH "${pkgs.lib.makeLibraryPath buildInputs}"
-            '';
-          };
+          default = nocap_rs { release = true; };
+
+          # nix build .#debug
+          debug = nocap_rs { release = false; };
 
           # nix build .#check
           check = naersk'.buildPackage {
@@ -83,7 +94,12 @@
         apps = {
           default = {
             type = "app";
-            program = "${self.packages.${system}.default}/bin/nocap_rs";
+            program = "${self.packages.${system}.default}/bin/${binaryName}";
+          };
+
+          debug = {
+            type = "app";
+            program = "${self.packages.${system}.debug}/bin/${binaryName}";
           };
         };
 
