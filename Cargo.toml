@@ -4,10 +4,3 @@ members = [
     "crates/ui",
     "app",
 ]
-
-[workspace.package]
-version = "0.1.0"
-authors = []
-
-[workspace.metadata.crane]
-name = "nocap_rs"
