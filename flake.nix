@@ -1,8 +1,12 @@
 {
   inputs = {
+    nixpkgs.url = "github:nixos/nixpkgs/nixos-25.11";
     flake-utils.url = "github:numtide/flake-utils";
     naersk.url = "github:nix-community/naersk";
-    nixpkgs.url = "github:nixos/nixpkgs/nixpkgs-unstable";
+    fenix = {
+      url = "github:nix-community/fenix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   outputs =
@@ -10,16 +14,26 @@
       self,
       flake-utils,
       naersk,
+      fenix,
       nixpkgs,
     }:
     flake-utils.lib.eachDefaultSystem (
       system:
       let
-        pkgs = (import nixpkgs) {
+        pkgs = import nixpkgs {
           inherit system;
+          overlays = [ fenix.overlays.default ];
         };
 
-        naersk' = pkgs.callPackage naersk { };
+        toolchain = pkgs.fenix.fromToolchainFile {
+          file = ./rust-toolchain;
+          sha256 = "sha256-zC8E38iDVJ1oPIzCqTk/Ujo9+9kx9dXq7wAwPMpkpg0=";
+        };
+
+        naersk' = pkgs.callPackage naersk {
+          cargo = toolchain;
+          rustc = toolchain;
+        };
 
         buildInputs = with pkgs; [
           wayland
@@ -110,14 +124,11 @@
 
         # For `nix develop`:
         devShell = pkgs.mkShell {
+          inherit buildInputs;
           nativeBuildInputs = with pkgs; [
-            rustc
-            cargo
-            clippy
-            rustfmt
+            toolchain
           ];
 
-          buildInputs = buildInputs;
           LD_LIBRARY_PATH = pkgs.lib.makeLibraryPath buildInputs;
         };
       }
