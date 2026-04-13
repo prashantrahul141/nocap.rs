@@ -57,11 +57,14 @@
         nocap_rs =
           { release }:
           naersk'.buildPackage {
+            inherit release;
             src = ./.;
             buildInputs = buildInputs;
-            nativeBuildInputs = [ pkgs.makeWrapper ];
-            inherit release;
-
+            nativeBuildInputs = [
+              pkgs.makeWrapper
+            ]
+            ++ pkgs.lib.optionals pkgs.stdenv.isLinux [ pkgs.mold ];
+            RUSTFLAGS = pkgs.lib.optionalString pkgs.stdenv.isLinux "-C link-arg=-fuse-ld=mold";
             postInstall = ''
               path="${pkgs.lib.makeLibraryPath buildInputs}"
               wrapProgram "$out/bin/${binaryName}" \
@@ -125,9 +128,12 @@
         # For `nix develop`:
         devShell = pkgs.mkShell {
           inherit buildInputs;
-          nativeBuildInputs = with pkgs; [
-            toolchain
-          ];
+          nativeBuildInputs =
+            with pkgs;
+            [
+              toolchain
+            ]
+            ++ pkgs.lib.optionals pkgs.stdenv.isLinux [ mold ];
 
           LD_LIBRARY_PATH = pkgs.lib.makeLibraryPath buildInputs;
         };
