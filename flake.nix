@@ -40,6 +40,10 @@
           libxkbcommon
           wayland.dev
           libGL
+          pipewire.dev
+          clang
+          libclang
+          glibc
 
           # we might need these later:
           # expat
@@ -57,14 +61,17 @@
         nocap_rs =
           { release }:
           naersk'.buildPackage {
-            inherit release;
+            inherit release buildInputs;
             src = ./.;
-            buildInputs = buildInputs;
             nativeBuildInputs = [
               pkgs.makeWrapper
             ]
-            ++ pkgs.lib.optionals pkgs.stdenv.isLinux [ pkgs.mold ];
+            ++ pkgs.lib.optionals pkgs.stdenv.isLinux [
+              pkgs.mold
+              pkgs.pkg-config
+            ];
             RUSTFLAGS = pkgs.lib.optionalString pkgs.stdenv.isLinux "-C link-arg=-fuse-ld=mold";
+            LIBCLANG_PATH = "${pkgs.libclang.lib}/lib";
             postInstall = ''
               path="${pkgs.lib.makeLibraryPath buildInputs}"
               wrapProgram "$out/bin/${binaryName}" \
@@ -133,9 +140,13 @@
             [
               toolchain
             ]
-            ++ pkgs.lib.optionals pkgs.stdenv.isLinux [ mold ];
+            ++ pkgs.lib.optionals pkgs.stdenv.isLinux [
+              mold
+              pkg-config
+            ];
 
           LD_LIBRARY_PATH = pkgs.lib.makeLibraryPath buildInputs;
+          LIBCLANG_PATH = "${pkgs.libclang.lib}/lib";
         };
       }
     );
