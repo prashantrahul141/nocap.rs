@@ -1,4 +1,4 @@
-use ui::UI;
+use nocaprs_ui::UI;
 
 fn main() -> eframe::Result {
     let options = eframe::NativeOptions {

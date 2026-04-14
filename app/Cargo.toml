@@ -9,4 +9,4 @@ name = "nocap_rs"
 [dependencies]
 eframe = "0.33.2"
 egui = "0.33.2"
-ui = { path = "../crates/ui/" }
+nocaprs_ui = { path = "../crates/ui/" }
