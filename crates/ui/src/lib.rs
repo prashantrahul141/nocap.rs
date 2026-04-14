@@ -1,9 +1,11 @@
 use eframe::egui;
+use tracing::info;
 
 pub struct UI {}
 
 impl Default for UI {
     fn default() -> Self {
+        info!("init ui");
         Self {}
     }
 }

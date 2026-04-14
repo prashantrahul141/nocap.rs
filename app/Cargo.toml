@@ -10,3 +10,8 @@ name = "nocap_rs"
 eframe = "0.33.2"
 egui = "0.33.2"
 nocaprs_ui = { path = "../crates/ui/" }
+tracing-subscriber = { version = "0.3.23", features = [
+    "env-filter",
+    "fmt",
+    "registry",
+] }
