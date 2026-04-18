@@ -9,9 +9,12 @@ name = "nocap_rs"
 [dependencies]
 eframe = "0.33.2"
 egui = "0.33.2"
-nocaprs_ui = { path = "../crates/ui/" }
+nocaprs_ui = { path = "../../crates/ui/" }
+nocaprs_platform = { path = "../../crates/platform/" }
+nocaprs_platform_linux = { path = "../../crates/platform-linux/" }
 tracing-subscriber = { version = "0.3.23", features = [
     "env-filter",
     "fmt",
     "registry",
 ] }
+tokio = { version = "1.51.1", features = ["rt", "macros"] }
