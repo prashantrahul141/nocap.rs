@@ -2,5 +2,7 @@
 resolver = "3"
 members = [
     "crates/ui",
-    "app",
+    "crates/platform",
+    "crates/platform-linux",
+    "app/nocaprs",
 ]
