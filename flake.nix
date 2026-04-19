@@ -27,7 +27,7 @@
 
         toolchain = pkgs.fenix.fromToolchainFile {
           file = ./rust-toolchain;
-          sha256 = "sha256-zC8E38iDVJ1oPIzCqTk/Ujo9+9kx9dXq7wAwPMpkpg0=";
+          sha256 = "sha256-gh/xTkxKHL4eiRXzWv8KP7vfjSk61Iq48x47BEDFgfk=";
         };
 
         naersk' = pkgs.callPackage naersk {
@@ -40,6 +40,7 @@
           libxkbcommon
           wayland.dev
           libGL
+          pipewire
           pipewire.dev
           clang
           libclang
@@ -146,6 +147,7 @@
             ];
 
           LD_LIBRARY_PATH = pkgs.lib.makeLibraryPath buildInputs;
+          RUSTFLAGS = pkgs.lib.optionalString pkgs.stdenv.isLinux "-C link-arg=-fuse-ld=mold";
           LIBCLANG_PATH = "${pkgs.libclang.lib}/lib";
         };
       }
