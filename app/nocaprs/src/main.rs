@@ -14,23 +14,15 @@ async fn main() -> Result<(), eframe::Error> {
         .init();
 
     tokio::spawn(async {
-        let platform = Linux::default();
-        let r = platform.take_screenshot().await.unwrap();
+        let mut platform = Linux::default();
+        let r = platform.create_screencapture_session().await.unwrap();
         dbg!(r);
+        platform.start_screencapture().await.unwrap();
     });
 
     let options = eframe::NativeOptions {
         viewport: egui::ViewportBuilder::default().with_inner_size([320.0, 240.0]),
         ..Default::default()
     };
-    eframe::run_native(
-        "nocap-rs",
-        options,
-        Box::new(|_| {
-            // image support:
-            // egui_extras::install_image_loaders(&cc.egui_ctx);
-
-            Ok(Box::<UI>::default())
-        }),
-    )
+    eframe::run_native("nocap-rs", options, Box::new(|_| Ok(Box::<UI>::default())))
 }
